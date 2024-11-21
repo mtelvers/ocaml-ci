@@ -3,8 +3,8 @@ FROM ocaml/opam:debian-12-ocaml-4.14@sha256:6246731ea5d2cd3a57669027aae33184d30d
 RUN sudo ln -f /usr/bin/opam-2.3 /usr/bin/opam && opam init --reinit -ni
 RUN sudo rm -f /etc/apt/apt.conf.d/docker-clean; echo 'Binary::apt::APT::Keep-Downloaded-Packages "true";' | sudo tee /etc/apt/apt.conf.d/keep-cache
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-  --mount=type=cache,target=/var/lib/apt,sharing=locked \
-  sudo apt update && sudo apt-get --no-install-recommends install -y libcapnp-dev libffi-dev libev-dev capnproto m4 pkg-config libsqlite3-dev libgmp-dev graphviz
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    sudo apt update && sudo apt-get --no-install-recommends install -y libcapnp-dev libffi-dev libev-dev capnproto m4 pkg-config libsqlite3-dev libgmp-dev graphviz
 RUN cd ~/opam-repository && git fetch -q origin master && git reset --hard 11bdbee61114a1cfa080b764e71c72a5760a93f0 && opam update
 COPY --chown=opam \
 	ocurrent/current_docker.opam \
@@ -48,7 +48,9 @@ ADD --chown=opam . .
 RUN opam exec -- dune build ./_build/install/default/bin/ocaml-ci-service
 
 FROM debian:12
-RUN apt-get update && apt-get install libev4 openssh-client curl gnupg2 dumb-init git graphviz libsqlite3-dev ca-certificates netbase -y --no-install-recommends
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install libev4 openssh-client curl gnupg2 dumb-init git graphviz libsqlite3-dev ca-certificates netbase -y --no-install-recommends
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
 RUN echo 'deb https://download.docker.com/linux/debian bookworm stable' >> /etc/apt/sources.list
 RUN apt-get update && apt-get install docker-ce docker-buildx-plugin -y --no-install-recommends
