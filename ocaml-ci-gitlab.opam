@@ -12,7 +12,7 @@ homepage: "https://github.com/ocurrent/ocaml-ci"
 doc: "https://ocaml.ci.dev/documentation"
 bug-reports: "https://github.com/ocurrent/ocaml-ci/issues"
 depends: [
-  "dune" {>= "3.16"}
+  "dune"
   "ocaml" {>= "4.14"}
   "ocaml-ci"
   "ocaml-ci-service"
