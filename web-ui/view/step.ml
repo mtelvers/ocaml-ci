@@ -1,6 +1,7 @@
 open Tyxml.Html
 module Client = Ocaml_ci_api.Client
 module Run_time = Ocaml_ci.Run_time
+module Capability = Capnp_rpc_lwt.Capability
 
 module Make (M : Git_forge_intf.Forge) = struct
   let title_card ~status ~card_title ~hash_link ~created_at ~finished_at
@@ -263,23 +264,48 @@ module Make (M : Git_forge_intf.Forge) = struct
     Dream.stream
       ~headers:[ ("Content-type", "text/html; charset=utf-8") ]
       (fun response_stream ->
-        Dream.write response_stream header >>= fun () ->
-        Dream.write response_stream (Ansi.process ansi data) >>= fun () ->
-        let rec loop next =
-          Current_rpc.Job.log job ~start:next >>= function
-          | Ok ("", _) ->
-              Dream.write response_stream footer >>= fun () ->
-              Dream.close response_stream
-          | Ok (data, next) ->
-              Dream.log "Fetching logs";
-              Dream.write response_stream (Ansi.process ansi data) >>= fun () ->
-              Dream.flush response_stream >>= fun () -> loop next
-          | Error (`Capnp ex) ->
-              Dream.log "Error fetching logs: %a" Capnp_rpc.Error.pp ex;
-              Dream.write response_stream
-                (Fmt.str "ocaml-ci error: %a@." Capnp_rpc.Error.pp ex)
-        in
-        loop next)
+        Lwt.finalize
+          (fun () ->
+            Dream.write response_stream header >>= fun () ->
+            Dream.write response_stream (Ansi.process ansi data) >>= fun () ->
+            let rec loop next =
+              let log_p = Current_rpc.Job.log job ~start:next in
+              let rec wait () =
+                Lwt.choose
+                  [
+                    (log_p >|= fun r -> `Log r);
+                    (Lwt_unix.sleep 5.0 >|= fun () -> `Beat);
+                  ]
+                >>= function
+                | `Log (Ok ("", _)) -> Dream.write response_stream footer
+                | `Log (Ok (data, next)) ->
+                    Dream.log "Fetching logs";
+                    Dream.write response_stream (Ansi.process ansi data)
+                    >>= fun () ->
+                    Dream.flush response_stream >>= fun () -> loop next
+                | `Log (Error (`Capnp ex)) ->
+                    Dream.log "Error fetching logs: %a" Capnp_rpc.Error.pp ex;
+                    Dream.write response_stream
+                      (Fmt.str "ocaml-ci error: %a@." Capnp_rpc.Error.pp ex)
+                | `Beat ->
+                    Lwt.catch
+                      (fun () ->
+                        (* Probe the client; if it has disconnected the write
+                           or flush will raise and we exit, letting the
+                           finalize block close the stream and release [job].
+                           HTML comment so it doesn't disturb the rendered
+                           page if a real client is still attached. *)
+                        Dream.write response_stream "<!-- ping -->"
+                        >>= fun () ->
+                        Dream.flush response_stream >>= fun () -> wait ())
+                      (fun _exn -> Lwt.return ())
+              in
+              wait ()
+            in
+            loop next)
+          (fun () ->
+            Capability.dec_ref job;
+            Dream.close response_stream))
 
   let show ~org ~repo ~refs ~hash ~variant ~job ~status ~csrf_token ~timestamps
       ~build_created_at ~step_created_at ~step_finished_at ~can_rebuild
@@ -716,23 +742,42 @@ module Make (M : Git_forge_intf.Forge) = struct
     Dream.stream
       ~headers:[ ("Content-type", "text/html; charset=utf-8") ]
       (fun response_stream ->
-        Dream.write response_stream header >>= fun () ->
-        let data' = process_logs data in
-        Dream.write response_stream data' >>= fun () ->
-        let rec loop next =
-          Current_rpc.Job.log job ~start:next >>= function
-          | Ok ("", _) ->
-              Dream.write response_stream footer >>= fun () ->
-              Dream.close response_stream
-          | Ok (data, next) ->
-              Dream.log "Fetching logs";
-              let data' = process_logs data in
-              Dream.write response_stream data' >>= fun () ->
-              Dream.flush response_stream >>= fun () -> loop next
-          | Error (`Capnp ex) ->
-              Dream.log "Error fetching logs: %a" Capnp_rpc.Error.pp ex;
-              Dream.write response_stream
-                (Fmt.str "ocaml-ci error: %a@." Capnp_rpc.Error.pp ex)
-        in
-        loop next)
+        Lwt.finalize
+          (fun () ->
+            Dream.write response_stream header >>= fun () ->
+            let data' = process_logs data in
+            Dream.write response_stream data' >>= fun () ->
+            let rec loop next =
+              let log_p = Current_rpc.Job.log job ~start:next in
+              let rec wait () =
+                Lwt.choose
+                  [
+                    (log_p >|= fun r -> `Log r);
+                    (Lwt_unix.sleep 5.0 >|= fun () -> `Beat);
+                  ]
+                >>= function
+                | `Log (Ok ("", _)) -> Dream.write response_stream footer
+                | `Log (Ok (data, next)) ->
+                    Dream.log "Fetching logs";
+                    let data' = process_logs data in
+                    Dream.write response_stream data' >>= fun () ->
+                    Dream.flush response_stream >>= fun () -> loop next
+                | `Log (Error (`Capnp ex)) ->
+                    Dream.log "Error fetching logs: %a" Capnp_rpc.Error.pp ex;
+                    Dream.write response_stream
+                      (Fmt.str "ocaml-ci error: %a@." Capnp_rpc.Error.pp ex)
+                | `Beat ->
+                    Lwt.catch
+                      (fun () ->
+                        Dream.write response_stream "<!-- ping -->"
+                        >>= fun () ->
+                        Dream.flush response_stream >>= fun () -> wait ())
+                      (fun _exn -> Lwt.return ())
+              in
+              wait ()
+            in
+            loop next)
+          (fun () ->
+            Capability.dec_ref job;
+            Dream.close response_stream))
 end
