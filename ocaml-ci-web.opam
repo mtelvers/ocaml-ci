@@ -15,8 +15,8 @@ depends: [
   "ansi" {>= "0.6.0"}
   "capnp-rpc-unix" {>= "1.2"}
   "crunch" {>= "3.2.0" & build}
-  "dream" {= "1.0.0~alpha6"}
-  "dream-httpaf" {= "1.0.0~alpha3"}
+  "dream"
+  "dream-httpaf"
   "fmt" {>= "0.8.9"}
   "logs" {>= "0.7.0"}
   "lwt" {>= "5.7.0"}
@@ -45,4 +45,7 @@ dev-repo: "git+https://github.com/ocurrent/ocaml-ci.git"
 x-maintenance-intent: ["(latest)"]
 pin-depends: [
   ["tailwindcss.dev" "https://github.com/tmattio/opam-tailwindcss/archive/e5bb6361a50c7cc5cad802311e609336583ca08f.tar.gz"]
+  ["dream.dev" "git+https://github.com/mtelvers/dream#5d55ff26e8cf48da65e8a25a753249ae4cbba186"]
+  ["dream-httpaf.dev" "git+https://github.com/mtelvers/dream#5d55ff26e8cf48da65e8a25a753249ae4cbba186"]
+  ["dream-pure.dev" "git+https://github.com/mtelvers/dream#5d55ff26e8cf48da65e8a25a753249ae4cbba186"]
 ]

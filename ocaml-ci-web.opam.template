@@ -1,3 +1,6 @@
 pin-depends: [
   ["tailwindcss.dev" "https://github.com/tmattio/opam-tailwindcss/archive/e5bb6361a50c7cc5cad802311e609336583ca08f.tar.gz"]
+  ["dream.dev" "git+https://github.com/mtelvers/dream#5d55ff26e8cf48da65e8a25a753249ae4cbba186"]
+  ["dream-httpaf.dev" "git+https://github.com/mtelvers/dream#5d55ff26e8cf48da65e8a25a753249ae4cbba186"]
+  ["dream-pure.dev" "git+https://github.com/mtelvers/dream#5d55ff26e8cf48da65e8a25a753249ae4cbba186"]
 ]

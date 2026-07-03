@@ -115,8 +115,8 @@
   (ansi (>= 0.6.0))
   (capnp-rpc-unix (>= 1.2))
   (crunch (and (>= 3.2.0) :build))
-  (dream (= 1.0.0~alpha6))
-  (dream-httpaf (= 1.0.0~alpha3))
+  dream
+  dream-httpaf
   (fmt (>= 0.8.9))
   (logs (>= 0.7.0))
   (lwt (>= 5.7.0))
