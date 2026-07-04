@@ -12,6 +12,9 @@
  (package ocaml-ci-web)
  (libraries
   ansi
+  dream
+  digestif.c
+  unix
   logs.cli
   prometheus-app.unix
   ocaml-ci

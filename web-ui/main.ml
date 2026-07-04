@@ -21,12 +21,24 @@ let main interface port github_pipeline_cap prometheus_config log_level =
   Lwt_main.run
     (let () = setup_logs log_level in
      let github = Option.map Backend.make github_pipeline_cap in
+     (* Proof-of-work gate on the expensive /github/ pages (they fan out RPC
+        into the engine), to keep JavaScript-less scraper crawls out. Gates by
+        path regardless of Accept; assets, badges and the homepage pass. *)
+     let challenge =
+       let difficulty =
+         Option.bind (Sys.getenv_opt "POW_DIFFICULTY") int_of_string_opt
+         |> Option.value ~default:12
+       in
+       Challenge.v ~difficulty
+         ~protect:(String.starts_with ~prefix:"/github/") ()
+     in
      let web =
        Dream.serve ~interface ~port
          ~error_handler:
            (Dream.error_template View.Client_error.ocaml_ci_error_template)
        @@ Dream.logger
        @@ Middleware.no_trailing_slash
+       @@ Challenge.middleware challenge
        @@ Dream.memory_sessions
        @@ Dream.flash
        @@ Router.create ~github
