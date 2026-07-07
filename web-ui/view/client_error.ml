@@ -73,10 +73,19 @@ let body ~code ~reason =
 
 (* https://github.com/aantron/dream/tree/master/example/9-error#9-error *)
 let ocaml_ci_error_template _error _debug_info suggested_response =
-  let status = Dream.status suggested_response in
-  let code = Dream.status_to_int status
-  and reason = Dream.status_to_string status in
-  let html = Fmt.to_to_string (pp ()) (html head (body ~code ~reason)) in
-  Dream.set_header suggested_response "Content-Type" Dream.text_html;
-  Dream.set_body suggested_response html;
-  Lwt.return suggested_response
+  (* The proof-of-work challenge (challenge.ml) serves its interstitial with a
+     503 status and its own solver HTML. Dream funnels every error-status
+     response through this template, so without this guard we would overwrite
+     that HTML with the generic error page and the browser could never solve
+     the challenge (every /github/ org page would stay 503). Pass the
+     interstitial through untouched. *)
+  match Dream.header suggested_response "X-Ocurrent-Challenge" with
+  | Some _ -> Lwt.return suggested_response
+  | None ->
+      let status = Dream.status suggested_response in
+      let code = Dream.status_to_int status
+      and reason = Dream.status_to_string status in
+      let html = Fmt.to_to_string (pp ()) (html head (body ~code ~reason)) in
+      Dream.set_header suggested_response "Content-Type" Dream.text_html;
+      Dream.set_body suggested_response html;
+      Lwt.return suggested_response

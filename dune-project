@@ -117,6 +117,7 @@
   (crunch (and (>= 3.2.0) :build))
   dream
   dream-httpaf
+  (digestif (>= 1.0.0))
   (fmt (>= 0.8.9))
   (logs (>= 0.7.0))
   (lwt (>= 5.7.0))

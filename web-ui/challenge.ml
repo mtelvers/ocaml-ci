@@ -148,10 +148,14 @@ let respond_interstitial t request =
   let redirect = safe_redirect (Some (Dream.target request)) in
   let body = interstitial_body ~challenge ~difficulty:t.difficulty ~redirect in
   (* 503 so crawlers/caches treat it as "not the content"; browsers still run
-     the JS and are redirected to the real page once solved. *)
+     the JS and are redirected to the real page once solved. The sentinel
+     header stops the app's Dream error_template from overwriting this body
+     (Dream funnels every error-status response through it); see
+     view/client_error.ml. *)
   Dream.respond ~status:`Service_Unavailable
     ~headers:[ ("Content-Type", "text/html; charset=utf-8");
-               ("Cache-Control", "no-store") ]
+               ("Cache-Control", "no-store");
+               ("X-Ocurrent-Challenge", "1") ]
     body
 
 let respond_verify t request =
