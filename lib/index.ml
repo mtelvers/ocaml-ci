@@ -129,9 +129,15 @@ let db =
          "SELECT variant, job_id FROM ci_build_index WHERE owner = ? AND name \
           = ? AND hash = ?"
      and full_hash =
+       (* GLOB (not LIKE) so the query uses the primary-key index: LIKE is
+          case-insensitive by default, which disables the index and forces a
+          full scan of the owner/name partition of ci_build_index on every
+          call. GLOB is case-sensitive and its prefix pattern compiles to an
+          indexed range seek. Git hashes are lowercase hex, so
+          case-sensitivity is a non-issue. *)
        Sqlite3.prepare db
          "SELECT DISTINCT hash FROM ci_build_index WHERE owner = ? AND name = \
-          ? AND hash LIKE ?"
+          ? AND hash GLOB ?"
      and record_job_summary =
        Sqlite3.prepare db
          "INSERT INTO ci_build_summary (owner, name, hash, gref, build_number, \
@@ -639,7 +645,7 @@ let get_full_hash ~owner ~name short_hash =
   if is_valid_hash short_hash then
     match
       Db.query t.full_hash
-        Sqlite3.Data.[ TEXT owner; TEXT name; TEXT (short_hash ^ "%") ]
+        Sqlite3.Data.[ TEXT owner; TEXT name; TEXT (short_hash ^ "*") ]
     with
     | [] -> Error `Unknown
     | [ Sqlite3.Data.[ TEXT hash ] ] -> Ok hash
