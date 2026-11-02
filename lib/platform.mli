@@ -48,7 +48,7 @@ val get :
   pool:Pool_name.t ->
   distro:string ->
   ocaml_version:Ocaml_version.t ->
-  opam_version:Opam_version.t ->
+  opam_version:Dockerfile_opam.Opam_version.t ->
   lower_bound:bool ->
   string Current.t ->
   t list Current.t
@@ -63,7 +63,7 @@ val get_local :
   distro:string ->
   ocaml_version:Ocaml_version.t ->
   host_base:Current_docker.Raw.Image.t Current.t ->
-  opam_version:Opam_version.t ->
+  opam_version:Dockerfile_opam.Opam_version.t ->
   lower_bound:bool ->
   Current_docker.Raw.Image.t Current.t ->
   t list Current.t
@@ -76,7 +76,7 @@ val pull :
   builder:Builder.t ->
   distro:string ->
   ocaml_version:Ocaml_version.t ->
-  opam_version:Opam_version.t ->
+  opam_version:Dockerfile_opam.Opam_version.t ->
   Current_docker.Raw.Image.t Current.t
 (** [pull ~schedule ~builder ~distro ~ocaml_version] pulls
     "ocaml/opam:\{distro\}-ocaml-\{version\}" on [schedule]. *)
@@ -87,7 +87,7 @@ val peek :
   builder:Builder.t ->
   distro:string ->
   ocaml_version:Ocaml_version.t ->
-  opam_version:Opam_version.t ->
+  opam_version:Dockerfile_opam.Opam_version.t ->
   string Current.t
 (** [peek ~schedule ~builder ~distro ~ocaml_version] pulls
     "ocaml/opam:\{distro\}-ocaml-\{version\}" on [schedule]. *)
